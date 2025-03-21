@@ -560,6 +560,8 @@ class Coin {
     }
 }
 
+images.player.src = './images/player-default.png';
+
 // ゲームの初期化
 document.addEventListener('DOMContentLoaded', () => {
     const game = new JapanRunner();
