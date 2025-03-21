@@ -45,6 +45,45 @@ const GAME_CONFIG = {
     powerupChance: 0.05,
     powerupDuration: 5000,
 };
+// 画像オブジェクトの初期化
+const images = {
+  player: new Image(),
+  enemy: new Image(),
+  coin: new Image(),
+  obstacle: new Image(),
+  background: new Image()
+};
+
+// 画像の読み込み
+function loadImages() {
+  // SVGファイルを使用するように変更
+  images.player.src = './images/player-default.svg';
+  images.enemy.src = './images/enemy-default.svg';
+  images.coin.src = './images/coin-default.svg';
+  images.obstacle.src = './images/obstacle-default.svg';
+  images.background.src = './images/background-default.svg';
+  
+  // 画像の読み込み完了を待つ
+  const promises = Object.values(images).map(img => {
+    return new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+  });
+  
+  return Promise.all(promises).catch(error => {
+    console.error('画像の読み込みに失敗しました:', error);
+    // 画像が読み込めない場合のフォールバック処理
+    useDefaultShapes();
+  });
+}
+
+// 画像が読み込めない場合に単純な図形を使用
+function useDefaultShapes() {
+  console.log('デフォルトの図形を使用します');
+  // 画像の代わりに描画する関数を上書き
+  // 実際の実装はゲームのコードに合わせて調整してください
+}
 
 // ゲームクラス
 class JapanRunner {
