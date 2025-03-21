@@ -266,7 +266,7 @@ function setupEventListeners() {
 
 // 背景の初期化
 function initBackgrounds() {
-    // 複数の背景レイヤーを作成（パララックス効果用）
+    // 複数の背景レイヤーを作成（パララックス効果用
     backgrounds = [
         { x: 0, speed: 1 },
         { x: canvas.width, speed: 1 }
