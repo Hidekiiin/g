@@ -54,11 +54,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    window.playerJump = function()  {
+    window.playerJump = function() {
         console.log('Game integration: Player jumping');
-        // 無限再帰を防ぐため、playerJump関数を直接呼び出さないようにする
-        if (typeof playerJump === 'function') {
-            playerJump();
+        // game.jsのjump関数を呼び出す（関数名が異なることを確認）
+        if (typeof jumpPlayer === 'function') {
+            jumpPlayer();
         }
     };
     
