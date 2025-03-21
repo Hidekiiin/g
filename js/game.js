@@ -796,3 +796,45 @@ function gameOver() {
 
 // ページ読み込み時にゲームを初期化
 window.addEventListener('load', initGame);
+
+// SVGデータURLを使用して画像を読み込む関数
+function loadImagesWithDataURL() {
+  // 画像オブジェクトの初期化（既存のimages変数を使用）
+  if (typeof images === 'undefined') {
+    window.images = {
+      player: new Image(),
+      enemy: new Image(),
+      coin: new Image(),
+      obstacle: new Image(),
+      background: new Image()
+    };
+  }
+  
+  // プレイヤーのSVGデータURL
+  images.player.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 160"><rect x="10" y="10" width="80" height="140" fill="%23FF4081" rx="10" /><circle cx="35" cy="50" r="10" fill="%23FFFFFF" /><circle cx="65" cy="50" r="10" fill="%23FFFFFF" /><path d="M30 100 Q50 120 70 100" stroke="%23FFFFFF" stroke-width="5" fill="none" /></svg>';
+  
+  // 敵のSVGデータURL
+  images.enemy.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120"><rect x="10" y="10" width="80" height="100" fill="%239C27B0" rx="10" /><circle cx="35" cy="40" r="8" fill="%23FFFFFF" /><circle cx="65" cy="40" r="8" fill="%23FFFFFF" /><path d="M30 80 Q50 60 70 80" stroke="%23FFFFFF" stroke-width="5" fill="none" /></svg>';
+  
+  // コインのSVGデータURL
+  images.coin.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="%23FFD700" /><circle cx="20" cy="20" r="8" fill="%23FFFFFF" /></svg>';
+  
+  // 障害物のSVGデータURL
+  images.obstacle.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect x="5" y="5" width="50" height="50" fill="%232196F3" rx="5" /></svg>';
+  
+  // 背景のSVGデータURL
+  images.background.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400"><rect x="0" y="0" width="800" height="300" fill="%2387CEEB" /><rect x="0" y="300" width="800" height="100" fill="%238BC34A" /></svg>';
+  
+  console.log('SVGデータURLを使用して画像を読み込みました') ;
+}
+
+// ゲームの初期化時に画像を読み込む
+document.addEventListener('DOMContentLoaded', function() {
+  // 既存のloadAssets関数を置き換えるか、その中で呼び出す
+  loadImagesWithDataURL();
+  
+  // JapanRunnerクラスのインスタンスを作成（既存のコードにない場合）
+  if (typeof JapanRunner !== 'undefined') {
+    const game = new JapanRunner();
+  }
+});
