@@ -156,7 +156,10 @@ function drawCoin(ctx, x, y, radius) {
 }
 
 // 画像オブジェクトの初期化
-const images = {
+// 変数を再宣言せず、既存の変数に値を代入
+images.player = new Image();
+images.enemy = new Image();
+// ...
   player: new Image(),
   enemy: new Image(),
   coin: new Image(),
