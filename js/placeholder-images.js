@@ -7,8 +7,8 @@
 const images = {
     // Player character images
     player: {
-    default: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="15" r="10" fill="%23FFD700"/><rect x="15" y="25" width="20" height="20" fill="brown"/></svg>',
-    custom: null
+        default: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="15" r="10" fill="%23FFD700"/><rect x="15" y="25" width="20" height="20" fill="brown"/></svg>',
+        custom: null
     },
     
     // Enemy images
