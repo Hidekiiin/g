@@ -41,7 +41,7 @@
     // 画像が見つからない場合に備えて、プログラムで画像を作成
     window.addEventListener('error', function(e) {
         const target = e.target;
-        if (target.tagName === 'IMG' & & target.src.includes('player-default.png')) {
+        if (target.tagName === 'IMG' target.src.includes('player-default.png')) {
             console.log('Replacing missing player-default.png with SVG data URL');
             target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="15" r="10" fill="%23FFD700"/><rect x="15" y="25" width="20" height="20" fill="brown"/></svg>';
             return true;
