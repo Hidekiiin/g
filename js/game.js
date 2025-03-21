@@ -104,6 +104,57 @@ function calculateLanePosition(lane) {
     return (lane * laneWidth) - (laneWidth / 2) - (player.width / 2);
 }
 
+// プレイヤーを描画する関数
+function drawPlayer(ctx, x, y, width, height) {
+  // 体（赤い四角形）
+  ctx.fillStyle = '#FF4081';
+  ctx.fillRect(x, y, width, height);
+  
+  // 目
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(x + width * 0.2, y + height * 0.2, width * 0.2, height * 0.1);
+  ctx.fillRect(x + width * 0.6, y + height * 0.2, width * 0.2, height * 0.1);
+  
+  // 口（笑顔）
+  ctx.beginPath();
+  ctx.arc(x + width / 2, y + height * 0.6, width * 0.2, 0, Math.PI);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+}
+
+// 敵を描画する関数
+function drawEnemy(ctx, x, y, width, height) {
+  // 体（紫の四角形）
+  ctx.fillStyle = '#9C27B0';
+  ctx.fillRect(x, y, width, height);
+  
+  // 目
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(x + width * 0.2, y + height * 0.2, width * 0.2, height * 0.1);
+  ctx.fillRect(x + width * 0.6, y + height * 0.2, width * 0.2, height * 0.1);
+  
+  // 口（怒った表情）
+  ctx.beginPath();
+  ctx.arc(x + width / 2, y + height * 0.7, width * 0.2, Math.PI, 0);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+}
+
+// コインを描画する関数
+function drawCoin(ctx, x, y, radius) {
+  // 金色の円
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 中央の穴
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(x, y, radius / 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 // 画像オブジェクトの初期化
 const images = {
   player: new Image(),
