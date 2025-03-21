@@ -116,14 +116,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize game elements
     function initializeGameElements() {
         console.log('Game integration: Initializing game elements');
-        
-        // Use images from placeholder-images.js
-        const playerImage = getImage('player', selectedCharacter === 'custom');
-        const enemyImage = getImage('enemy', useCustomEnemy);
-        const backgroundImage = getImage('background', useCustomBackground);
-        const coinImage = getImage('coin');
-        const obstacleImage = getImage('obstacle');
-        
+    
+        // Use images from placeholder-images.js with window.getImage
+        const playerImage = typeof window.getImage === 'function' ? window.getImage('player', selectedCharacter === 'custom') : null;
+        const enemyImage = typeof window.getImage === 'function' ? window.getImage('enemy', useCustomEnemy) : null;
+        const backgroundImage = typeof window.getImage === 'function' ? window.getImage('background', useCustomBackground) : null;
+        const coinImage = typeof window.getImage === 'function' ? window.getImage('coin') : null;
+        const obstacleImage = typeof window.getImage === 'function' ? window.getImage('obstacle') : null;
+    
         // If game.js has initialization functions, call them
         if (typeof initPlayer === 'function') {
             initPlayer(playerImage);
