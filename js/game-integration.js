@@ -54,12 +54,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    window.playerJump = function() {
+    window.playerJump = function()  {
         console.log('Game integration: Player jumping');
+        // 無限再帰を防ぐため、playerJump関数を直接呼び出さないようにする
         if (typeof playerJump === 'function') {
             playerJump();
         }
     };
+    
     
     window.playerMoveRight = function() {
         console.log('Game integration: Player moving right');
