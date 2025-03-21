@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="120" viewBox="0 0 100 120">
+  <!-- 敵キャラクター（警察官風） -->
+  <g>
+    <!-- 体 -->
+    <rect x="35" y="50" width="30" height="50" fill="#000080" rx="5" ry="5" />
+    
+    <!-- 頭 -->
+    <circle cx="50" cy="30" r="20" fill="#FFE4C4" />
+    
+    <!-- 帽子 -->
+    <path d="M30,30 Q50,10 70,30" fill="#000080" />
+    <rect x="30" y="30" width="40" height="10" fill="#000080" rx="5" ry="5" />
+    
+    <!-- 目 -->
+    <circle cx="40" cy="30" r="4" fill="white" />
+    <circle cx="60" cy="30" r="4" fill="white" />
+    <circle cx="40" cy="30" r="2" fill="black" />
+    <circle cx="60" cy="30" r="2" fill="black" />
+    
+    <!-- 口 -->
+    <path d="M40,40 Q50,45 60,40" fill="none" stroke="#333" stroke-width="2" />
+    
+    <!-- バッジ -->
+    <circle cx="50" cy="60" r="5" fill="#FFD700" />
+    
+    <!-- 腕 -->
+    <rect x="20" y="50" width="15" height="40" fill="#000080" rx="5" ry="5" />
+    <rect x="65" y="50" width="15" height="40" fill="#000080" rx="5" ry="5" />
+    
+    <!-- 足 -->
+    <rect x="35" y="100" width="15" height="20" fill="#000080" rx="5" ry="5" />
+    <rect x="50" y="100" width="15" height="20" fill="#000080" rx="5" ry="5" />
+  </g>
+</svg>

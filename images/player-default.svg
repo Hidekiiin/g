@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="160" viewBox="0 0 100 160">
+  <!-- プレイヤーキャラクター（おばあちゃん風） -->
+  <g>
+    <!-- 体 -->
+    <rect x="30" y="60" width="40" height="70" fill="#8B4513" rx="10" ry="10" />
+    
+    <!-- 頭 -->
+    <circle cx="50" cy="40" r="25" fill="#FFE4C4" />
+    
+    <!-- 目 -->
+    <circle cx="40" cy="35" r="5" fill="white" />
+    <circle cx="60" cy="35" r="5" fill="white" />
+    <circle cx="40" cy="35" r="2" fill="black" />
+    <circle cx="60" cy="35" r="2" fill="black" />
+    
+    <!-- 眼鏡 -->
+    <rect x="35" y="30" width="10" height="10" rx="5" ry="5" fill="none" stroke="#333" stroke-width="2" />
+    <rect x="55" y="30" width="10" height="10" rx="5" ry="5" fill="none" stroke="#333" stroke-width="2" />
+    <line x1="45" y1="35" x2="55" y2="35" stroke="#333" stroke-width="2" />
+    
+    <!-- 口 -->
+    <path d="M40,50 Q50,60 60,50" fill="none" stroke="#333" stroke-width="2" />
+    
+    <!-- 髪 -->
+    <path d="M25,40 Q50,0 75,40" fill="#CCCCCC" />
+    
+    <!-- 腕 -->
+    <rect x="15" y="70" width="15" height="40" fill="#8B4513" rx="5" ry="5" />
+    <rect x="70" y="70" width="15" height="40" fill="#8B4513" rx="5" ry="5" />
+    
+    <!-- 足 -->
+    <rect x="30" y="130" width="15" height="30" fill="#8B4513" rx="5" ry="5" />
+    <rect x="55" y="130" width="15" height="30" fill="#8B4513" rx="5" ry="5" />
+    
+    <!-- 杖 -->
+    <line x1="15" y1="70" x2="15" y2="150" stroke="#333" stroke-width="3" />
+  </g>
+</svg>

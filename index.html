@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ランナーゲーム - Angry Gran Run + Subway Surfers 風</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="score-container">スコア: <span id="score">0</span></div>
+            <div class="coins-container">コイン: <span id="coins">0</span></div>
+        </div>
+        
+        <div class="game-canvas-container">
+            <canvas id="gameCanvas"></canvas>
+            <div id="startScreen" class="overlay">
+                <h1>ランナーゲーム</h1>
+                <p>左右にスワイプして障害物を避け、敵を倒してコインを集めよう！</p>
+                <button id="startButton">ゲームスタート</button>
+                <div class="character-select">
+                    <h2>キャラクター選択</h2>
+                    <div class="character-options">
+                        <div class="character-option selected" data-character="default">
+                            <img src="images/player-default.png" alt="デフォルトキャラクター">
+                            <p>デフォルト</p>
+                        </div>
+                        <div class="character-option" data-character="custom">
+                            <div class="custom-upload">
+                                <label for="customCharacter">+</label>
+                                <input type="file" id="customCharacter" accept="image/*">
+                            </div>
+                            <p>カスタム</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="gameOverScreen" class="overlay hidden">
+                <h1>ゲームオーバー</h1>
+                <p>スコア: <span id="finalScore">0</span></p>
+                <p>コイン: <span id="finalCoins">0</span></p>
+                <button id="restartButton">もう一度プレイ</button>
+            </div>
+            
+            <div id="pauseScreen" class="overlay hidden">
+                <h1>一時停止</h1>
+                <button id="resumeButton">ゲームに戻る</button>
+                <button id="quitButton">タイトルに戻る</button>
+            </div>
+        </div>
+        
+        <div class="game-controls">
+            <button id="pauseButton" class="control-button">一時停止</button>
+            <div class="mobile-controls">
+                <button id="leftButton" class="control-button">←</button>
+                <button id="jumpButton" class="control-button">↑</button>
+                <button id="rightButton" class="control-button">→</button>
+            </div>
+        </div>
+        
+        <div class="game-footer">
+            <div class="customization-panel">
+                <h3>カスタマイズ</h3>
+                <div class="customization-options">
+                    <div class="option">
+                        <label for="customEnemy">敵の画像:</label>
+                        <input type="file" id="customEnemy" accept="image/*">
+                    </div>
+                    <div class="option">
+                        <label for="customBackground">背景の画像:</label>
+                        <input type="file" id="customBackground" accept="image/*">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/game.js"></script>
+    <script src="js/customization.js"></script>
+</body>
+</html>
