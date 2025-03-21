@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60">
+  <!-- 障害物（ゴミ箱風） -->
+  <g>
+    <!-- 本体 -->
+    <rect x="10" y="15" width="40" height="45" fill="#555555" rx="5" ry="5" />
+    
+    <!-- 蓋 -->
+    <rect x="5" y="10" width="50" height="10" fill="#333333" rx="3" ry="3" />
+    
+    <!-- 模様 -->
+    <rect x="15" y="25" width="30" height="5" fill="#777777" />
+    <rect x="15" y="35" width="30" height="5" fill="#777777" />
+    <rect x="15" y="45" width="30" height="5" fill="#777777" />
+  </g>
+</svg>
