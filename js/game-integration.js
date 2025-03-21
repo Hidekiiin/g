@@ -2,6 +2,41 @@
  * game-integration.js
  * Integrates various game components and initializes the game
  */
+// ページ読み込み時にcanvasを確認・作成する
+(function() {
+    // canvas要素を作成して追加する関数
+    function createCanvas() {
+        console.log('Creating canvas element for game');
+        const newCanvas = document.createElement('canvas');
+        newCanvas.id = 'gameCanvas';
+        newCanvas.width = 800;
+        newCanvas.height = 600;
+        
+        const canvasContainer = document.querySelector('.game-canvas-container');
+        if (canvasContainer) {
+            // 既存のcanvasを削除
+            const oldCanvas = document.getElementById('gameCanvas');
+            if (oldCanvas) {
+                oldCanvas.remove();
+            }
+            
+            // 新しいcanvasを追加
+            canvasContainer.insertBefore(newCanvas, canvasContainer.firstChild);
+            return true;
+        }
+        return false;
+    }
+    
+    // DOMContentLoadedイベントでcanvasを作成
+    document.addEventListener('DOMContentLoaded', function() {
+        createCanvas();
+    });
+    
+    // 即時実行も行う（既にDOMが読み込まれている場合のため）
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(createCanvas, 0);
+    }
+})();
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
