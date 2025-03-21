@@ -1,856 +1,566 @@
+/**
+ * ジャパンランナー - メインゲームスクリプト
+ * サブウェイサーファーズのようなゲームメカニクスに日本文化要素を組み込んだエンドレスランナーゲーム
+ */
+
+// ゲームの状態管理
+const GAME_STATE = {
+    LOADING: 0,
+    START: 1,
+    PLAYING: 2,
+    GAME_OVER: 3
+};
+
 // ゲームの設定
-const gameSettings = {
-    gravity: 0.5,
-    playerSpeed: 5,
-    jumpForce: 12,
-    groundHeight: 50,
-    obstacleSpeed: 5,
-    obstacleFrequency: 100, // フレーム数
-    coinFrequency: 150,     // フレーム数
-    enemyFrequency: 200,    // フレーム数
-    laneWidth: 100,         // レーン幅
-    laneCount: 3,           // レーン数
-    initialDifficulty: 1,
-    difficultyIncreaseRate: 0.0001
-};
-
-// ゲームの状態
-let gameState = {
-    running: false,
-    paused: false,
-    score: 0,
-    coins: 0,
-    distance: 0,
-    difficulty: gameSettings.initialDifficulty,
-    frameCount: 0,
-    lastObstacleFrame: 0,
-    lastCoinFrame: 0,
-    lastEnemyFrame: 0
-};
-
-// ゲームオブジェクト
-let player = {
-    x: 0,
-    y: 0,
-    width: 50,
-    height: 80,
-    lane: 1,
-    jumping: false,
-    falling: false,
-    velocity: 0,
-    image: null
-};
-
-let obstacles = [];
-let coins = [];
-let enemies = [];
-let backgrounds = [];
-
-// キャンバスとコンテキスト
-let canvas;
-let ctx;
-
-// 画像リソース
-let images = {
-    player: null,
-    enemy: null,
-    obstacle: null,
-    coin: null,
-    background: null
-};
-
-// ゲームの初期化
-function initGame() {
-    canvas = document.getElementById('gameCanvas');
-    ctx = canvas.getContext('2d');
+const GAME_CONFIG = {
+    // キャンバス設定
+    canvasWidth: 800,
+    canvasHeight: 600,
     
-    // キャンバスのサイズをコンテナに合わせる
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    // プレイヤー設定
+    playerWidth: 60,
+    playerHeight: 90,
+    playerStartX: 400,
+    playerStartY: 450,
+    playerSpeed: 8,
+    jumpForce: 20,
+    gravity: 1,
     
-    // デフォルト画像の読み込み
-    loadDefaultImages();
+    // ゲーム設定
+    initialSpeed: 5,
+    maxSpeed: 15,
+    speedIncrement: 0.0005,
+    laneWidth: 200,
+    lanes: 3,
+    
+    // 障害物設定
+    obstacleMinDistance: 300,
+    obstacleMaxDistance: 600,
+    
+    // コイン設定
+    coinChance: 0.7,
+    coinValue: 10,
+    
+    // パワーアップ設定
+    powerupChance: 0.05,
+    powerupDuration: 5000,
+};
+
+// ゲームクラス
+class JapanRunner {
+    constructor() {
+        // DOM要素の取得
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.startScreen = document.querySelector('.game-start-screen');
+        this.playScreen = document.querySelector('.game-play-screen');
+        this.gameOverScreen = document.querySelector('.game-over-screen');
+        this.loadingScreen = document.querySelector('.loading-screen');
+        this.progressBar = document.querySelector('.progress');
+        
+        // スコア表示要素
+        this.scoreElement = document.getElementById('score');
+        this.coinsElement = document.getElementById('coins');
+        this.distanceElement = document.getElementById('distance');
+        this.finalScoreElement = document.getElementById('final-score');
+        this.highScoreElement = document.getElementById('high-score');
+        
+        // ボタン要素
+        this.startButton = document.getElementById('start-button');
+        this.restartButton = document.getElementById('restart-button');
+        
+        // ゲーム状態の初期化
+        this.gameState = GAME_STATE.LOADING;
+        this.score = 0;
+        this.coins = 0;
+        this.distance = 0;
+        this.speed = GAME_CONFIG.initialSpeed;
+        this.highScore = this.getHighScore();
+        
+        // ゲームオブジェクト
+        this.player = null;
+        this.obstacles = [];
+        this.coins = [];
+        this.powerups = [];
+        this.backgrounds = [];
+        
+        // アセットの読み込み状態
+        this.assetsLoaded = 0;
+        this.totalAssets = 0;
+        
+        // キー入力状態
+        this.keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            ArrowUp: false,
+            ArrowDown: false
+        };
+        
+        // ゲームループのタイムスタンプ
+        this.lastTime = 0;
+        
+        // イベントリスナーの設定
+        this.setupEventListeners();
+        
+        // キャンバスのサイズ設定
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        
+        // アセットの読み込み開始
+        this.loadAssets();
+    }
+    
+    // キャンバスのリサイズ
+    resizeCanvas() {
+        const container = this.canvas.parentElement;
+        this.canvas.width = container.clientWidth;
+        this.canvas.height = container.clientHeight;
+        GAME_CONFIG.canvasWidth = this.canvas.width;
+        GAME_CONFIG.canvasHeight = this.canvas.height;
+        GAME_CONFIG.playerStartX = this.canvas.width / 2;
+        GAME_CONFIG.playerStartY = this.canvas.height - 150;
+        GAME_CONFIG.laneWidth = this.canvas.width / 3;
+    }
     
     // イベントリスナーの設定
-    setupEventListeners();
-    
-    // 背景の初期化
-    initBackgrounds();
-}
-
-// キャンバスのリサイズ
-function resizeCanvas() {
-    const container = canvas.parentElement;
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-    
-    // プレイヤーの初期位置を設定
-    resetPlayerPosition();
-}
-
-// プレイヤーの位置をリセット
-function resetPlayerPosition() {
-    player.lane = 1;
-    player.x = calculateLanePosition(player.lane);
-    player.y = canvas.height - gameSettings.groundHeight - player.height;
-    player.jumping = false;
-    player.falling = false;
-    player.velocity = 0;
-}
-
-// レーン位置の計算
-function calculateLanePosition(lane) {
-    const laneWidth = canvas.width / gameSettings.laneCount;
-    return (lane * laneWidth) - (laneWidth / 2) - (player.width / 2);
-}
-
-// プレイヤーを描画する関数
-function drawPlayer(ctx, x, y, width, height) {
-  // 体（赤い四角形）
-  ctx.fillStyle = '#FF4081';
-  ctx.fillRect(x, y, width, height);
-  
-  // 目
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(x + width * 0.2, y + height * 0.2, width * 0.2, height * 0.1);
-  ctx.fillRect(x + width * 0.6, y + height * 0.2, width * 0.2, height * 0.1);
-  
-  // 口（笑顔）
-  ctx.beginPath();
-  ctx.arc(x + width / 2, y + height * 0.6, width * 0.2, 0, Math.PI);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fill();
-}
-
-// 敵を描画する関数
-function drawEnemy(ctx, x, y, width, height) {
-  // 体（紫の四角形）
-  ctx.fillStyle = '#9C27B0';
-  ctx.fillRect(x, y, width, height);
-  
-  // 目
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(x + width * 0.2, y + height * 0.2, width * 0.2, height * 0.1);
-  ctx.fillRect(x + width * 0.6, y + height * 0.2, width * 0.2, height * 0.1);
-  
-  // 口（怒った表情）
-  ctx.beginPath();
-  ctx.arc(x + width / 2, y + height * 0.7, width * 0.2, Math.PI, 0);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fill();
-}
-
-// コインを描画する関数
-function drawCoin(ctx, x, y, radius) {
-  // 金色の円
-  ctx.fillStyle = '#FFD700';
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // 中央の穴
-  ctx.fillStyle = '#FFFFFF';
-  ctx.beginPath();
-  ctx.arc(x, y, radius / 2, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-// 画像オブジェクトの初期化
-// 変数を再宣言せず、既存の変数に値を代入
-images.player = new Image();
-images.enemy = new Image();
-// ...
-  player: new Image(),
-  enemy: new Image(),
-  coin: new Image(),
-  obstacle: new Image(),
-  background: new Image()
-};
-
-// 画像の読み込み
-function loadImages() {
-  // SVGファイルを使用するように変更
-  images.player.src = './images/player-default.svg';
-  images.enemy.src = './images/enemy-default.svg';
-  images.coin.src = './images/coin-default.svg';
-  images.obstacle.src = './images/obstacle-default.svg';
-  images.background.src = './images/background-default.svg';
-  
-  // 画像の読み込み完了を待つ
-  const promises = Object.values(images).map(img => {
-    return new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-    });
-  });
-  
-  return Promise.all(promises).catch(error => {
-    console.error('画像の読み込みに失敗しました:', error);
-    // 画像が読み込めない場合のフォールバック処理
-    useDefaultShapes();
-  });
-}
-
-// 画像が読み込めない場合に単純な図形を使用
-function useDefaultShapes() {
-  console.log('デフォルトの図形を使用します');
-  // 画像の代わりに描画する関数を上書き
-  // 実際の実装はゲームのコードに合わせて調整してください
-}
-
-// デフォルト画像の読み込み
-function loadDefaultImages() {
-    // プレイヤー画像
-    images.player = new Image();
-    images.player.src = 'images/player-default.svg';
-    images.player.onload = function() {
-        player.image = images.player;
-    };
-    
-    // 敵画像
-    images.enemy = new Image();
-    images.enemy.src = 'images/enemy-default.svg';
-    
-    // 障害物画像
-    images.obstacle = new Image();
-    images.obstacle.src = 'images/obstacle-default.svg';
-    
-    // コイン画像
-    images.coin = new Image();
-    images.coin.src = 'images/coin-default.svg';
-    
-    // 背景画像
-    images.background = new Image();
-    images.background.src = 'images/background-default.svg';
-}
-
-// イベントリスナーの設定
-function setupEventListeners() {
-    // スタートボタン
-    document.getElementById('startButton').addEventListener('click', startGame);
-    
-    // リスタートボタン
-    document.getElementById('restartButton').addEventListener('click', restartGame);
-    
-    // 一時停止ボタン
-    document.getElementById('pauseButton').addEventListener('click', togglePause);
-    
-    // 再開ボタン
-    document.getElementById('resumeButton').addEventListener('click', resumeGame);
-    
-    // 終了ボタン
-    document.getElementById('quitButton').addEventListener('click', quitGame);
-    
-    // キーボード操作
-    window.addEventListener('keydown', handleKeyDown);
-    
-    // モバイルコントロール
-    document.getElementById('leftButton').addEventListener('click', moveLeft);
-    document.getElementById('rightButton').addEventListener('click', moveRight);
-    document.getElementById('jumpButton').addEventListener('click', jump);
-    
-    // キャラクター選択
-    const characterOptions = document.querySelectorAll('.character-option');
-    characterOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            characterOptions.forEach(opt => opt.classList.remove('selected'));
-            this.classList.add('selected');
+    setupEventListeners() {
+        // キーボード入力
+        window.addEventListener('keydown', (e) => {
+            if (this.keys.hasOwnProperty(e.key)) {
+                this.keys[e.key] = true;
+            }
         });
-    });
+        
+        window.addEventListener('keyup', (e) => {
+            if (this.keys.hasOwnProperty(e.key)) {
+                this.keys[e.key] = false;
+            }
+        });
+        
+        // タッチ操作（モバイル対応）
+        this.canvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            const x = touch.clientX;
+            const y = touch.clientY;
+            
+            if (y > this.canvas.height * 0.7) {
+                // 下部エリアのタッチはスライディング
+                this.keys.ArrowDown = true;
+            } else if (y < this.canvas.height * 0.3) {
+                // 上部エリアのタッチはジャンプ
+                this.keys.ArrowUp = true;
+            } else if (x < this.canvas.width * 0.3) {
+                // 左エリアのタッチは左移動
+                this.keys.ArrowLeft = true;
+            } else if (x > this.canvas.width * 0.7) {
+                // 右エリアのタッチは右移動
+                this.keys.ArrowRight = true;
+            }
+        });
+        
+        this.canvas.addEventListener('touchend', () => {
+            // タッチ終了時にすべてのキー入力をリセット
+            this.keys.ArrowLeft = false;
+            this.keys.ArrowRight = false;
+            this.keys.ArrowUp = false;
+            this.keys.ArrowDown = false;
+        });
+        
+        // ゲーム開始ボタン
+        this.startButton.addEventListener('click', () => {
+            this.startGame();
+        });
+        
+        // リスタートボタン
+        this.restartButton.addEventListener('click', () => {
+            this.restartGame();
+        });
+    }
     
-    // カスタム画像アップロード
-    document.getElementById('customCharacter').addEventListener('change', handleCustomCharacter);
-    document.getElementById('customEnemy').addEventListener('change', handleCustomEnemy);
-    document.getElementById('customBackground').addEventListener('change', handleCustomBackground);
-}
-
-// 背景の初期化
-function initBackgrounds() {
-    // 複数の背景レイヤーを作成（パララックス効果用
-    backgrounds = [
-        { x: 0, speed: 1 },
-        { x: canvas.width, speed: 1 }
-    ];
-}
-
-// ゲーム開始
-function startGame() {
-    // スタート画面を非表示
-    document.getElementById('startScreen').classList.add('hidden');
+    // アセットの読み込み
+    loadAssets() {
+        // 仮のアセット読み込み処理（実際のアセットはまだ実装していない）
+        // 実際のゲームでは画像やサウンドを読み込む
+        setTimeout(() => {
+            this.progressBar.style.width = '100%';
+            setTimeout(() => {
+                this.loadingScreen.style.display = 'none';
+                this.gameState = GAME_STATE.START;
+                this.startScreen.style.display = 'flex';
+            }, 500);
+        }, 1000);
+    }
     
-    // ゲーム状態のリセット
-    resetGame();
+    // ゲーム開始
+    startGame() {
+        this.gameState = GAME_STATE.PLAYING;
+        this.startScreen.style.display = 'none';
+        this.playScreen.style.display = 'block';
+        
+        // プレイヤーの初期化
+        this.player = new Player(
+            GAME_CONFIG.playerStartX,
+            GAME_CONFIG.playerStartY,
+            GAME_CONFIG.playerWidth,
+            GAME_CONFIG.playerHeight
+        );
+        
+        // ゲームループの開始
+        requestAnimationFrame((time) => this.gameLoop(time));
+    }
     
-    // ゲームループの開始
-    gameState.running = true;
-    requestAnimationFrame(gameLoop);
-}
-
-// ゲームのリスタート
-function restartGame() {
-    // ゲームオーバー画面を非表示
-    document.getElementById('gameOverScreen').classList.add('hidden');
+    // ゲームオーバー
+    gameOver() {
+        this.gameState = GAME_STATE.GAME_OVER;
+        this.finalScoreElement.textContent = this.score;
+        
+        // ハイスコアの更新
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            this.saveHighScore();
+        }
+        
+        this.highScoreElement.textContent = this.highScore;
+        this.gameOverScreen.style.display = 'flex';
+    }
     
-    // ゲーム状態のリセット
-    resetGame();
+    // ゲームの再開
+    restartGame() {
+        this.gameOverScreen.style.display = 'none';
+        this.score = 0;
+        this.coins = 0;
+        this.distance = 0;
+        this.speed = GAME_CONFIG.initialSpeed;
+        this.obstacles = [];
+        this.coins = [];
+        this.powerups = [];
+        
+        this.startGame();
+    }
     
-    // ゲームループの再開
-    gameState.running = true;
-    requestAnimationFrame(gameLoop);
-}
-
-// ゲーム状態のリセット
-function resetGame() {
-    gameState = {
-        running: false,
-        paused: false,
-        score: 0,
-        coins: 0,
-        distance: 0,
-        difficulty: gameSettings.initialDifficulty,
-        frameCount: 0,
-        lastObstacleFrame: 0,
-        lastCoinFrame: 0,
-        lastEnemyFrame: 0
-    };
+    // ハイスコアの取得
+    getHighScore() {
+        const highScore = localStorage.getItem('japanRunnerHighScore');
+        return highScore ? parseInt(highScore) : 0;
+    }
     
-    resetPlayerPosition();
-    obstacles = [];
-    coins = [];
-    enemies = [];
+    // ハイスコアの保存
+    saveHighScore() {
+        localStorage.setItem('japanRunnerHighScore', this.highScore.toString());
+    }
     
-    // スコア表示のリセット
-    document.getElementById('score').textContent = '0';
-    document.getElementById('coins').textContent = '0';
-}
-
-// 一時停止の切り替え
-function togglePause() {
-    if (gameState.running) {
-        if (gameState.paused) {
-            resumeGame();
-        } else {
-            pauseGame();
+    // ゲームループ
+    gameLoop(currentTime) {
+        // 時間差分の計算
+        const deltaTime = currentTime - this.lastTime;
+        this.lastTime = currentTime;
+        
+        // ゲームが実行中の場合のみ更新
+        if (this.gameState === GAME_STATE.PLAYING) {
+            // ゲーム状態の更新
+            this.update(deltaTime);
+            
+            // 描画
+            this.render();
+            
+            // 次のフレームをリクエスト
+            requestAnimationFrame((time) => this.gameLoop(time));
         }
     }
-}
-
-// ゲームの一時停止
-function pauseGame() {
-    gameState.paused = true;
-    document.getElementById('pauseScreen').classList.remove('hidden');
-}
-
-// ゲームの再開
-function resumeGame() {
-    gameState.paused = false;
-    document.getElementById('pauseScreen').classList.add('hidden');
-    requestAnimationFrame(gameLoop);
-}
-
-// ゲームの終了（タイトルに戻る）
-function quitGame() {
-    gameState.running = false;
-    gameState.paused = false;
-    document.getElementById('pauseScreen').classList.add('hidden');
-    document.getElementById('startScreen').classList.remove('hidden');
-    resetGame();
-}
-
-// キーボード入力の処理
-function handleKeyDown(event) {
-    if (!gameState.running || gameState.paused) return;
-    
-    switch (event.key) {
-        case 'ArrowLeft':
-            moveLeft();
-            break;
-        case 'ArrowRight':
-            moveRight();
-            break;
-        case 'ArrowUp':
-        case ' ':
-            jump();
-            break;
-        case 'p':
-            togglePause();
-            break;
-    }
-}
-
-// 左に移動
-function moveLeft() {
-    if (!gameState.running || gameState.paused) return;
-    if (player.lane > 0) {
-        player.lane--;
-        player.x = calculateLanePosition(player.lane);
-    }
-}
-
-// 右に移動
-function moveRight() {
-    if (!gameState.running || gameState.paused) return;
-    if (player.lane < gameSettings.laneCount - 1) {
-        player.lane++;
-        player.x = calculateLanePosition(player.lane);
-    }
-}
-
-// ジャンプ
-function jump() {
-    if (!gameState.running || gameState.paused || player.jumping || player.falling) return;
-    
-    player.jumping = true;
-    player.velocity = -gameSettings.jumpForce;
-}
-
-// カスタムキャラクターの処理
-function handleCustomCharacter(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                images.player = img;
-                player.image = img;
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-// カスタム敵の処理
-function handleCustomEnemy(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                images.enemy = img;
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-// カスタム背景の処理
-function handleCustomBackground(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                images.background = img;
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-// ゲームループ
-function gameLoop(timestamp) {
-    if (!gameState.running) return;
-    if (gameState.paused) return;
-    
-    // キャンバスのクリア
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // 背景の描画
-    drawBackgrounds();
     
     // ゲーム状態の更新
-    updateGameState();
+    update(deltaTime) {
+        // プレイヤーの更新
+        this.player.update(deltaTime, this.keys);
+        
+        // 速度の増加
+        this.speed += GAME_CONFIG.speedIncrement * deltaTime;
+        if (this.speed > GAME_CONFIG.maxSpeed) {
+            this.speed = GAME_CONFIG.maxSpeed;
+        }
+        
+        // 距離の更新
+        this.distance += this.speed * 0.1;
+        
+        // 障害物の生成
+        this.generateObstacles();
+        
+        // 障害物の更新
+        for (let i = this.obstacles.length - 1; i >= 0; i--) {
+            const obstacle = this.obstacles[i];
+            obstacle.update(this.speed);
+            
+            // 画面外に出た障害物の削除
+            if (obstacle.y > GAME_CONFIG.canvasHeight) {
+                this.obstacles.splice(i, 1);
+                continue;
+            }
+            
+            // 衝突判定
+            if (this.checkCollision(this.player, obstacle)) {
+                this.gameOver();
+                return;
+            }
+        }
+        
+        // スコアの更新
+        this.score = Math.floor(this.distance) + (this.coins * GAME_CONFIG.coinValue);
+        this.scoreElement.textContent = this.score;
+        this.distanceElement.textContent = Math.floor(this.distance);
+        this.coinsElement.textContent = this.coins;
+    }
     
-    // オブジェクトの生成
-    generateObjects();
-    
-    // オブジェクトの更新と描画
-    updateAndDrawObjects();
-    
-    // プレイヤーの更新と描画
-    updateAndDrawPlayer();
+    // 障害物の生成
+    generateObstacles() {
+        // 最後の障害物からの距離が十分であれば新しい障害物を生成
+        const lastObstacle = this.obstacles[this.obstacles.length - 1];
+        if (!lastObstacle || 
+            lastObstacle.y > GAME_CONFIG.obstacleMinDistance) {
+            
+            // ランダムなレーンに障害物を配置
+            const lane = Math.floor(Math.random() * GAME_CONFIG.lanes);
+            const x = lane * GAME_CONFIG.laneWidth + GAME_CONFIG.laneWidth / 2;
+            
+            // 障害物の種類をランダムに選択（0: 低い障害物, 1: 高い障害物）
+            const type = Math.floor(Math.random() * 2);
+            
+            // 障害物の作成
+            const obstacle = new Obstacle(
+                x, 
+                -100, 
+                80, 
+                type === 0 ? 40 : 80, 
+                type
+            );
+            
+            this.obstacles.push(obstacle);
+        }
+    }
     
     // 衝突判定
-    checkCollisions();
-    
-    // スコアの更新
-    updateScore();
-    
-    // 次のフレームの要求
-    requestAnimationFrame(gameLoop);
-}
-
-// 背景の描画
-function drawBackgrounds() {
-    // 背景画像がロードされていない場合は単色の背景を描画
-    if (!images.background || !images.background.complete) {
-        ctx.fillStyle = '#87CEEB';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // 地面の描画
-        ctx.fillStyle = '#8B4513';
-        ctx.fillRect(0, canvas.height - gameSettings.groundHeight, canvas.width, gameSettings.groundHeight);
-        return;
+    checkCollision(a, b) {
+        return (
+            a.x < b.x + b.width &&
+            a.x + a.width > b.x &&
+            a.y < b.y + b.height &&
+            a.y + a.height > b.y
+        );
     }
     
-    // 背景画像を使った背景の描画（パララックス効果）
-    for (let i = 0; i < backgrounds.length; i++) {
-        const bg = backgrounds[i];
-        
-        // 背景の位置を更新
-        bg.x -= gameSettings.obstacleSpeed * bg.speed * gameState.difficulty;
-        
-        // 背景が画面外に出たら反対側に配置
-        if (bg.x <= -canvas.width) {
-            bg.x = canvas.width;
-        }
+    // 描画
+    render() {
+        // キャンバスのクリア
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         // 背景の描画
-        ctx.drawImage(images.background, bg.x, 0, canvas.width, canvas.height);
-    }
-    
-    // 地面の描画
-    ctx.fillStyle = '#8B4513';
-    ctx.fillRect(0, canvas.height - gameSettings.groundHeight, canvas.width, gameSettings.groundHeight);
-}
-
-// ゲーム状態の更新
-function updateGameState() {
-    gameState.frameCount++;
-    gameState.distance += gameSettings.obstacleSpeed * gameState.difficulty;
-    gameState.difficulty += gameSettings.difficultyIncreaseRate;
-}
-
-// オブジェクトの生成
-function generateObjects() {
-    // 障害物の生成
-    if (gameState.frameCount - gameState.lastObstacleFrame >= gameSettings.obstacleFrequency / gameState.difficulty) {
-        generateObstacle();
-        gameState.lastObstacleFrame = gameState.frameCount;
-    }
-    
-    // コインの生成
-    if (gameState.frameCount - gameState.lastCoinFrame >= gameSettings.coinFrequency / gameState.difficulty) {
-        generateCoin();
-        gameState.lastCoinFrame = gameState.frameCount;
-    }
-    
-    // 敵の生成
-    if (gameState.frameCount - gameState.lastEnemyFrame >= gameSettings.enemyFrequency / gameState.difficulty) {
-        generateEnemy();
-        gameState.lastEnemyFrame = gameState.frameCount;
-    }
-}
-
-// 障害物の生成
-function generateObstacle() {
-    const lane = Math.floor(Math.random() * gameSettings.laneCount);
-    const laneWidth = canvas.width / gameSettings.laneCount;
-    const x = (lane * laneWidth) + (laneWidth / 2) - 25; // 障害物の幅の半分を引く
-    
-    obstacles.push({
-        x: x,
-        y: canvas.height - gameSettings.groundHeight - 30, // 障害物の高さを30とする
-        width: 50,
-        height: 30,
-        lane: lane
-    });
-}
-
-// コインの生成
-function generateCoin() {
-    const lane = Math.floor(Math.random() * gameSettings.laneCount);
-    const laneWidth = canvas.width / gameSettings.laneCount;
-    const x = (lane * laneWidth) + (laneWidth / 2) - 15; // コインの幅の半分を引く
-    const y = canvas.height - gameSettings.groundHeight - 50 - Math.random() * 100; // 地面から少し上の位置
-    
-    coins.push({
-        x: x,
-        y: y,
-        width: 30,
-        height: 30,
-        lane: lane
-    });
-}
-
-// 敵の生成
-function generateEnemy() {
-    const lane = Math.floor(Math.random() * gameSettings.laneCount);
-    const laneWidth = canvas.width / gameSettings.laneCount;
-    const x = (lane * laneWidth) + (laneWidth / 2) - 25; // 敵の幅の半分を引く
-    
-    enemies.push({
-        x: x,
-        y: canvas.height - gameSettings.groundHeight - 60, // 敵の高さを60とする
-        width: 50,
-        height: 60,
-        lane: lane,
-        defeated: false
-    });
-}
-
-// オブジェクトの更新と描画
-function updateAndDrawObjects() {
-    // 障害物の更新と描画
-    updateAndDrawObstacles();
-    
-    // コインの更新と描画
-    updateAndDrawCoins();
-    
-    // 敵の更新と描画
-    updateAndDrawEnemies();
-}
-
-// 障害物の更新と描画
-function updateAndDrawObstacles() {
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        const obstacle = obstacles[i];
-        
-        // 障害物の位置を更新
-        obstacle.x -= gameSettings.obstacleSpeed * gameState.difficulty;
-        
-        // 画面外に出た障害物を削除
-        if (obstacle.x + obstacle.width < 0) {
-            obstacles.splice(i, 1);
-            continue;
-        }
+        this.renderBackground();
         
         // 障害物の描画
-        if (images.obstacle && images.obstacle.complete) {
-            ctx.drawImage(images.obstacle, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-        } else {
-            ctx.fillStyle = '#FF0000';
-            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        for (const obstacle of this.obstacles) {
+            obstacle.render(this.ctx);
         }
+        
+        // プレイヤーの描画
+        this.player.render(this.ctx);
+    }
+    
+    // 背景の描画
+    renderBackground() {
+        // 仮の背景（グラデーション）
+        const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+        gradient.addColorStop(0, '#87CEEB');  // 空色
+        gradient.addColorStop(1, '#E0F7FA');  // 薄い水色
+        
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // 地面の描画
+        this.ctx.fillStyle = '#8BC34A';  // 緑色
+        this.ctx.fillRect(0, this.canvas.height - 100, this.canvas.width, 100);
+        
+        // レーンの区切り線
+        this.ctx.strokeStyle = '#FFFFFF';
+        this.ctx.lineWidth = 5;
+        this.ctx.setLineDash([20, 10]);
+        
+        for (let i = 1; i < GAME_CONFIG.lanes; i++) {
+            const x = i * GAME_CONFIG.laneWidth;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.canvas.height - 100);
+            this.ctx.stroke();
+        }
+        
+        this.ctx.setLineDash([]);
     }
 }
 
-// コインの更新と描画
-function updateAndDrawCoins() {
-    for (let i = coins.length - 1; i >= 0; i--) {
-        const coin = coins[i];
-        
-        // コインの位置を更新
-        coin.x -= gameSettings.obstacleSpeed * gameState.difficulty;
-        
-        // 画面外に出たコインを削除
-        if (coin.x + coin.width < 0) {
-            coins.splice(i, 1);
-            continue;
+// プレイヤークラス
+class Player {
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.lane = 1;  // 中央レーン
+        this.jumping = false;
+        this.sliding = false;
+        this.verticalVelocity = 0;
+        this.originalHeight = height;
+    }
+    
+    update(deltaTime, keys) {
+        // レーン移動
+        if (keys.ArrowLeft && this.lane > 0) {
+            this.lane--;
+            keys.ArrowLeft = false;  // キー入力をリセット
         }
         
-        // コインの描画
-        if (images.coin && images.coin.complete) {
-            ctx.drawImage(images.coin, coin.x, coin.y, coin.width, coin.height);
-        } else {
-            ctx.fillStyle = '#FFD700';
+        if (keys.ArrowRight && this.lane < GAME_CONFIG.lanes - 1) {
+            this.lane++;
+            keys.ArrowRight = false;  // キー入力をリセット
+        }
+        
+        // 目標のX座標を計算
+        const targetX = this.lane * GAME_CONFIG.laneWidth + GAME_CONFIG.laneWidth / 2 - this.width / 2;
+        
+        // 現在のX座標から目標のX座標に向かって移動
+        if (this.x < targetX) {
+            this.x += GAME_CONFIG.playerSpeed;
+            if (this.x > targetX) this.x = targetX;
+        } else if (this.x > targetX) {
+            this.x -= GAME_CONFIG.playerSpeed;
+            if (this.x < targetX) this.x = targetX;
+        }
+        
+        // ジャンプ
+        if (keys.ArrowUp && !this.jumping && !this.sliding) {
+            this.jumping = true;
+            this.verticalVelocity = -GAME_CONFIG.jumpForce;
+            keys.ArrowUp = false;  // キー入力をリセット
+        }
+        
+        // スライディング
+        if (keys.ArrowDown && !this.jumping && !this.sliding) {
+            this.sliding = true;
+            this.height = this.originalHeight / 2;
+            this.y += this.originalHeight / 2;
+            
+            // スライディングは一定時間後に解除
+            setTimeout(() => {
+                this.sliding = false;
+                this.height = this.originalHeight;
+                this.y -= this.originalHeight / 2;
+            }, 1000);
+            
+            keys.ArrowDown = false;  // キー入力をリセット
+        }
+        
+        // ジャンプ中の処理
+        if (this.jumping) {
+            this.y += this.verticalVelocity;
+            this.verticalVelocity += GAME_CONFIG.gravity;
+            
+            // 地面に着地したらジャンプ終了
+            if (this.y >= GAME_CONFIG.playerStartY) {
+                this.y = GAME_CONFIG.playerStartY;
+                this.jumping = false;
+                this.verticalVelocity = 0;
+            }
+        }
+    }
+    
+    render(ctx) {
+        // 仮のプレイヤー描画（赤い四角形）
+        ctx.fillStyle = '#FF4081';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        
+        // 目や顔のパーツを描画して人間らしく
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(this.x + this.width * 0.2, this.y + this.height * 0.2, this.width * 0.2, this.height * 0.1);
+        ctx.fillRect(this.x + this.width * 0.6, this.y + this.height * 0.2, this.width * 0.2, this.height * 0.1);
+        
+        // 口
+        if (this.jumping) {
+            // ジャンプ中は「O」の形
             ctx.beginPath();
-            ctx.arc(coin.x + coin.width / 2, coin.y + coin.height / 2, coin.width / 2, 0, Math.PI * 2);
+            ctx.arc(this.x + this.width / 2, this.y + this.height * 0.6, this.width * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+        } else if (this.sliding) {
+            // スライディング中は横線
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(this.x + this.width * 0.3, this.y + this.height * 0.6, this.width * 0.4, this.height * 0.05);
+        } else {
+            // 通常時は笑顔
+            ctx.beginPath();
+            ctx.arc(this.x + this.width / 2, this.y + this.height * 0.6, this.width * 0.2, 0, Math.PI);
+            ctx.fillStyle = '#FFFFFF';
             ctx.fill();
         }
     }
 }
 
-// 敵の更新と描画
-function updateAndDrawEnemies() {
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        const enemy = enemies[i];
-        
-        // 敵の位置を更新
-        enemy.x -= gameSettings.obstacleSpeed * gameState.difficulty;
-        
-        // 画面外に出た敵を削除
-        if (enemy.x + enemy.width < 0) {
-            enemies.splice(i, 1);
-            continue;
-        }
-        
-        // 倒された敵は描画しない
-        if (enemy.defeated) {
-            enemies.splice(i, 1);
-            continue;
-        }
-        
-        // 敵の描画
-        if (images.enemy && images.enemy.complete) {
-            ctx.drawImage(images.enemy, enemy.x, enemy.y, enemy.width, enemy.height);
+// 障害物クラス
+class Obstacle {
+    constructor(x, y, width, height, type) {
+        this.x = x - width / 2;  // 中心に配置するための調整
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.type = type;  // 0: 低い障害物, 1: 高い障害物
+    }
+    
+    update(speed) {
+        this.y += speed;
+    }
+    
+    render(ctx) {
+        // 障害物の種類によって色を変える
+        if (this.type === 0) {
+            // 低い障害物（青）
+            ctx.fillStyle = '#2196F3';
         } else {
-            ctx.fillStyle = '#00FF00';
-            ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            // 高い障害物（紫）
+            ctx.fillStyle = '#9C27B0';
         }
+        
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
-// プレイヤーの更新と描画
-function updateAndDrawPlayer() {
-    // ジャンプと落下の処理
-    if (player.jumping || player.falling) {
-        player.velocity += gameSettings.gravity;
-        player.y += player.velocity;
-        
-        // 地面に着地した場合
-        if (player.y >= canvas.height - gameSettings.groundHeight - player.height) {
-            player.y = canvas.height - gameSettings.groundHeight - player.height;
-            player.jumping = false;
-            player.falling = false;
-            player.velocity = 0;
-        }
+// コインクラス
+class Coin {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 30;
+        this.height = 30;
+        this.collected = false;
     }
     
-    // プレイヤーの描画
-    if (player.image && player.image.complete) {
-        ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
-    } else {
-        ctx.fillStyle = '#0000FF';
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-    }
-}
-
-// 衝突判定
-function checkCollisions() {
-    // プレイヤーの衝突判定用の矩形
-    const playerRect = {
-        x: player.x,
-        y: player.y,
-        width: player.width,
-        height: player.height
-    };
-    
-    // 障害物との衝突判定
-    for (let i = 0; i < obstacles.length; i++) {
-        const obstacle = obstacles[i];
-        
-        if (checkCollision(playerRect, obstacle)) {
-            gameOver();
-            return;
-        }
+    update(speed) {
+        this.y += speed;
     }
     
-    // コインとの衝突判定
-    for (let i = coins.length - 1; i >= 0; i--) {
-        const coin = coins[i];
-        
-        if (checkCollision(playerRect, coin)) {
-            // コインを獲得
-            gameState.coins++;
-            coins.splice(i, 1);
+    render(ctx) {
+        if (!this.collected) {
+            // 金色の円形
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
+            ctx.fill();
             
-            // コイン表示の更新
-            document.getElementById('coins').textContent = gameState.coins;
-        }
-    }
-    
-    // 敵との衝突判定
-    for (let i = 0; i < enemies.length; i++) {
-        const enemy = enemies[i];
-        
-        if (!enemy.defeated && checkCollision(playerRect, enemy)) {
-            // プレイヤーがジャンプ中で、敵の上部に接触した場合は敵を倒す
-            if (player.jumping && player.velocity > 0 && player.y + player.height < enemy.y + enemy.height / 2) {
-                enemy.defeated = true;
-                player.velocity = -gameSettings.jumpForce / 2; // 小さなジャンプ
-                gameState.score += 100;
-            } else {
-                // それ以外の場合はゲームオーバー
-                gameOver();
-                return;
-            }
+            // 中央に穴（五円玉風）
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.width / 4, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 }
 
-// 矩形同士の衝突判定
-function checkCollision(rect1, rect2) {
-    return rect1.x < rect2.x + rect2.width &&
-           rect1.x + rect1.width > rect2.x &&
-           rect1.y < rect2.y + rect2.height &&
-           rect1.y + rect1.height > rect2.y;
-}
-
-// スコアの更新
-function updateScore() {
-    // 距離に応じてスコアを増加
-    gameState.score = Math.floor(gameState.distance / 10);
-    
-    // スコア表示の更新
-    document.getElementById('score').textContent = gameState.score;
-}
-
-// ゲームオーバー
-function gameOver() {
-    gameState.running = false;
-    
-    // 最終スコアの表示
-    document.getElementById('finalScore').textContent = gameState.score;
-    document.getElementById('finalCoins').textContent = gameState.coins;
-    
-    // ゲームオーバー画面の表示
-    document.getElementById('gameOverScreen').classList.remove('hidden');
-}
-
-// ページ読み込み時にゲームを初期化
-window.addEventListener('load', initGame);
-
-// SVGデータURLを使用して画像を読み込む関数
-function loadImagesWithDataURL() {
-  // 画像オブジェクトの初期化（既存のimages変数を使用）
-  if (typeof images === 'undefined') {
-    window.images = {
-      player: new Image(),
-      enemy: new Image(),
-      coin: new Image(),
-      obstacle: new Image(),
-      background: new Image()
-    };
-  }
-  
-  // プレイヤーのSVGデータURL
-  images.player.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 160"><rect x="10" y="10" width="80" height="140" fill="%23FF4081" rx="10" /><circle cx="35" cy="50" r="10" fill="%23FFFFFF" /><circle cx="65" cy="50" r="10" fill="%23FFFFFF" /><path d="M30 100 Q50 120 70 100" stroke="%23FFFFFF" stroke-width="5" fill="none" /></svg>';
-  
-  // 敵のSVGデータURL
-  images.enemy.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120"><rect x="10" y="10" width="80" height="100" fill="%239C27B0" rx="10" /><circle cx="35" cy="40" r="8" fill="%23FFFFFF" /><circle cx="65" cy="40" r="8" fill="%23FFFFFF" /><path d="M30 80 Q50 60 70 80" stroke="%23FFFFFF" stroke-width="5" fill="none" /></svg>';
-  
-  // コインのSVGデータURL
-  images.coin.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="%23FFD700" /><circle cx="20" cy="20" r="8" fill="%23FFFFFF" /></svg>';
-  
-  // 障害物のSVGデータURL
-  images.obstacle.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect x="5" y="5" width="50" height="50" fill="%232196F3" rx="5" /></svg>';
-  
-  // 背景のSVGデータURL
-  images.background.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400"><rect x="0" y="0" width="800" height="300" fill="%2387CEEB" /><rect x="0" y="300" width="800" height="100" fill="%238BC34A" /></svg>';
-  
-  console.log('SVGデータURLを使用して画像を読み込みました') ;
-}
-
-// ゲームの初期化時に画像を読み込む
-document.addEventListener('DOMContentLoaded', function() {
-  // 既存のloadAssets関数を置き換えるか、その中で呼び出す
-    // アセットの読み込み
-loadAssets() {
-    // SVGデータURLを使用して画像を読み込む
-    loadImagesWithDataURL();
-    
-    // 読み込み完了の処理
-    setTimeout(() => {
-        this.progressBar.style.width = '100%';
-        setTimeout(() => {
-            this.loadingScreen.style.display = 'none';
-            this.gameState = GAME_STATE.START;
-            this.startScreen.style.display = 'flex';
-        }, 500);
-    }, 1000);
-}
-
-  loadImagesWithDataURL();
-  
-  // JapanRunnerクラスのインスタンスを作成（既存のコードにない場合）
-  if (typeof JapanRunner !== 'undefined') {
+// ゲームの初期化
+document.addEventListener('DOMContentLoaded', () => {
     const game = new JapanRunner();
-  }
 });
