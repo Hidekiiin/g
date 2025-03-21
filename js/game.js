@@ -108,26 +108,26 @@ function calculateLanePosition(lane) {
 function loadDefaultImages() {
     // プレイヤー画像
     images.player = new Image();
-    images.player.src = 'images/player-default.png';
+    images.player.src = 'images/player-default.svg';
     images.player.onload = function() {
         player.image = images.player;
     };
     
     // 敵画像
     images.enemy = new Image();
-    images.enemy.src = 'images/enemy-default.png';
+    images.enemy.src = 'images/enemy-default.svg';
     
     // 障害物画像
     images.obstacle = new Image();
-    images.obstacle.src = 'images/obstacle-default.png';
+    images.obstacle.src = 'images/obstacle-default.svg';
     
     // コイン画像
     images.coin = new Image();
-    images.coin.src = 'images/coin-default.png';
+    images.coin.src = 'images/coin-default.svg';
     
     // 背景画像
     images.background = new Image();
-    images.background.src = 'images/background-default.png';
+    images.background.src = 'images/background-default.svg';
 }
 
 // イベントリスナーの設定
