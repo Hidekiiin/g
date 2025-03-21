@@ -167,6 +167,28 @@ document.addEventListener('DOMContentLoaded', function() {
         // Continue loop
         requestAnimationFrame(gameLoop);
     }
+
+    // 初期化時に使用する画像を取得する関数
+function getGameImage(type, useCustom = false)  {
+    if (typeof getImage === 'function') {
+        return getImage(type, useCustom);
+    } else {
+        // フォールバック：images変数から直接取得
+        if (type === 'player') {
+            return useCustom && images.player.custom ? images.player.custom : images.player.default;
+        } else if (type === 'enemy') {
+            return useCustom && images.enemy.custom ? images.enemy.custom : images.enemy.default;
+        } else if (type === 'background') {
+            return useCustom && images.background.custom ? images.background.custom : images.background.default;
+        } else if (type === 'coin') {
+            return images.coin;
+        } else if (type === 'obstacle') {
+            return images.obstacle;
+        }
+        return null;
+    }
+}
+
     
     // Handle window resize
     window.addEventListener('resize', function() {
