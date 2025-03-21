@@ -831,6 +831,22 @@ function loadImagesWithDataURL() {
 // ゲームの初期化時に画像を読み込む
 document.addEventListener('DOMContentLoaded', function() {
   // 既存のloadAssets関数を置き換えるか、その中で呼び出す
+    // アセットの読み込み
+loadAssets() {
+    // SVGデータURLを使用して画像を読み込む
+    loadImagesWithDataURL();
+    
+    // 読み込み完了の処理
+    setTimeout(() => {
+        this.progressBar.style.width = '100%';
+        setTimeout(() => {
+            this.loadingScreen.style.display = 'none';
+            this.gameState = GAME_STATE.START;
+            this.startScreen.style.display = 'flex';
+        }, 500);
+    }, 1000);
+}
+
   loadImagesWithDataURL();
   
   // JapanRunnerクラスのインスタンスを作成（既存のコードにない場合）
